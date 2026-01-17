@@ -1,22 +1,22 @@
 import { notebookLLMService } from './notebookLLM.service.js';
-import fs from 'node:fs/promises';
 import Boom from '@hapi/boom';
 
 export interface TranscriptionResult {
   transcription: string;
   summary: string;
   notebookId?: string;
+  driveFileId?: string;
 }
 
 class TranscriptionService {
-  async processAudio(audioPath: string, prompt: string): Promise<TranscriptionResult> {
+  async processAudioFromDrive(driveFileId: string, prompt: string): Promise<TranscriptionResult> {
     let notebookId: string | undefined;
 
     try {
-      console.log(`🎵 Processing audio: ${audioPath}`);
+      console.log(`📁 Processing audio from Google Drive: ${driveFileId}`);
 
       // 1. Crear notebook temporal
-      const notebookName = `Transcription-${Date.now()}`;
+      const notebookName = `Audio-Transcription-${Date.now()}`;
       const notebook = await notebookLLMService.createNotebook(notebookName);
       notebookId = notebook.content?.[0]?.text || notebook.id;
 
@@ -24,52 +24,61 @@ class TranscriptionService {
         throw new Error('Failed to create notebook: No ID returned');
       }
 
-      // 2. Leer el archivo de audio y agregarlo como texto
-      // Nota: NotebookLLM puede no soportar audio directamente vía MCP
-      // Esta es una implementación inicial que puede necesitar ajustes
-      const audioContent = await fs.readFile(audioPath, 'base64');
-      await notebookLLMService.addTextToNotebook(
-        notebookId,
-        'Audio File',
-        `Audio file (base64): ${audioContent.substring(0, 100)}...`
-      );
+      console.log(`📓 Created notebook: ${notebookName} (ID: ${notebookId})`);
 
-      // 3. Hacer query con el prompt personalizado
-      const queryResult = await notebookLLMService.queryNotebook(
-        notebookId,
-        `Transcribe and analyze this audio with the following instruction: ${prompt}`
-      );
-
-      // 4. Extraer transcripción y resumen
-      const responseText = queryResult.content?.[0]?.text || '';
+      // 2. Agregar archivo de Drive al notebook
+      // NotebookLLM automáticamente transcribirá el audio
+      await notebookLLMService.addDriveFileToNotebook(notebookId, driveFileId);
       
-      if (!responseText) {
+      console.log(`⏳ Waiting for NotebookLLM to process the audio...`);
+      console.log(`   This may take 15-30 seconds for audio files`);
+      // Dar tiempo a NotebookLLM para procesar el archivo
+      // Audio files need more time than text/PDFs
+      await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds
+
+      // 3. Obtener la transcripción completa
+      console.log(`📝 Requesting transcription...`);
+      const transcriptionQuery = await notebookLLMService.queryNotebook(
+        notebookId,
+        'Provide the complete, word-for-word transcription of the audio file. Do not summarize, just transcribe everything that was said.'
+      );
+
+      const transcription = transcriptionQuery.content?.[0]?.text || '';
+      console.log(`   Transcription length: ${transcription.length} characters`);
+
+      // 4. Hacer query con el prompt personalizado para el resumen
+      console.log(`🔍 Generating summary with custom prompt...`);
+      const summaryQuery = await notebookLLMService.queryNotebook(
+        notebookId,
+        prompt
+      );
+
+      const summary = summaryQuery.content?.[0]?.text || '';
+      console.log(`   Summary length: ${summary.length} characters`);
+      
+      if (!transcription && !summary) {
         throw new Error('No response from NotebookLLM');
       }
 
+      console.log(`✅ Successfully processed audio from Drive`);
+
       return {
-        transcription: responseText,
-        summary: responseText,
-        notebookId // Para debugging
+        transcription,
+        summary,
+        notebookId,
+        driveFileId
       };
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('❌ Error processing audio:', errorMessage);
+      console.error('❌ Error processing audio from Drive:', errorMessage);
       throw Boom.internal('Failed to process audio with NotebookLLM', { error: errorMessage });
     } finally {
-      // 5. Limpiar: eliminar archivo temporal
-      try {
-        await fs.unlink(audioPath);
-        console.log(`🗑️  Deleted temp file: ${audioPath}`);
-      } catch (err) {
-        console.error('Error deleting temp file:', err);
-      }
-
-      // 6. Limpiar: eliminar notebook temporal
+      // Limpiar: eliminar notebook temporal (opcional, puedes comentar esto para debugging)
       if (notebookId) {
         try {
           await notebookLLMService.deleteNotebook(notebookId);
+          console.log(`🗑️  Deleted temporary notebook ${notebookId}`);
         } catch (err) {
           console.error('Error deleting notebook:', err);
         }
