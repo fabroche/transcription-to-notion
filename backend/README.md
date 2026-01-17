@@ -106,7 +106,9 @@ Información general de la API
   "endpoints": {
     "notebookList": "GET /api/v1/notebook/list",
     "notebookQuery": "POST /api/v1/notebook/query",
-    "notebookHealth": "GET /api/v1/notebook/health"
+    "notebookHealth": "GET /api/v1/notebook/health",
+    "authReconnect": "POST /api/v1/auth/reconnect",
+    "authHealth": "GET /api/v1/auth/health"
   }
 }
 ```
@@ -207,6 +209,12 @@ curl -X POST http://localhost:3000/api/v1/notebook/query \
     "notebookTitle": "My Notebook",
     "prompt": "What are the main topics?"
   }'
+
+# Auth health check
+curl http://localhost:3000/api/v1/auth/health
+
+# Reconectar MCP (después de ejecutar notebooklm-mcp-auth)
+curl -X POST http://localhost:3000/api/v1/auth/reconnect
 ```
 
 ## Estructura de Capas
