@@ -5,6 +5,7 @@ import Joi from 'joi';
 export function validatorHandler(schema: Joi.ObjectSchema, property: 'body' | 'query' | 'params' = 'body') {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const data = req[property];
+    console.log("validatorHandler",data)
     const { error } = schema.validate(data, { abortEarly: false });
 
     if (error) {

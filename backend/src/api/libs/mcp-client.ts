@@ -18,7 +18,7 @@ class MCPClient {
 
     try {
       const transport = new StdioClientTransport({
-        command: 'notebooklm-mcp-server',
+        command: 'notebooklm-mcp',
         args: []
       });
 
