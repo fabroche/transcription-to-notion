@@ -27,6 +27,7 @@ A backend API that allows you to list and query existing NotebookLLM notebooks t
 
 - 📚 **List Notebooks**: Get all your NotebookLLM notebooks
 - 🔍 **Query Notebooks**: Ask questions to specific notebooks by name
+- 🔄 **Auth Reconnect**: Reload MCP credentials without server restart
 - 🤖 **AI-Powered**: Leverages NotebookLLM's AI capabilities via MCP
 - 🚀 **Clean Architecture**: Modular, maintainable, and scalable codebase
 - 🔒 **Type Safety**: Full TypeScript implementation
@@ -266,7 +267,9 @@ Get API information
   "endpoints": {
     "notebookList": "GET /api/v1/notebook/list",
     "notebookQuery": "POST /api/v1/notebook/query",
-    "notebookHealth": "GET /api/v1/notebook/health"
+    "notebookHealth": "GET /api/v1/notebook/health",
+    "authReconnect": "POST /api/v1/auth/reconnect",
+    "authHealth": "GET /api/v1/auth/health"
   }
 }
 ```
@@ -354,6 +357,45 @@ Notebook service health check
   "success": true,
   "message": "Notebook query service is running",
   "timestamp": "2026-01-17T19:30:00.000Z"
+}
+```
+
+---
+
+#### `POST /api/v1/auth/reconnect`
+
+Reconnect MCP client with existing credentials
+
+**Usage:**
+
+1. Run `notebooklm-mcp-auth` in terminal to refresh credentials
+2. Call this endpoint to reload credentials in the server
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "message": "MCP client reconnected successfully. New credentials loaded from auth.json"
+  }
+}
+```
+
+---
+
+#### `GET /api/v1/auth/health`
+
+Auth service health check
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Auth service is running",
+  "timestamp": "2026-01-17T20:15:00.000Z"
 }
 ```
 
@@ -457,14 +499,21 @@ uv tool install notebooklm-mcp-server --force
 
 **Cause:** MCP authentication tokens are expired
 
-**Solution:**
+**Solution Option 1 (Recommended):**
 
 ```bash
 # Re-authenticate
 notebooklm-mcp-auth
 
-# Verify auth file exists
-ls ~/.notebooklm-mcp/auth.json
+# Reconnect without restarting server
+curl -X POST http://localhost:3000/api/v1/auth/reconnect
+```
+
+**Solution Option 2:**
+
+```bash
+# Re-authenticate
+notebooklm-mcp-auth
 
 # Restart the backend server
 npm run dev

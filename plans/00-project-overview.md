@@ -1,83 +1,327 @@
-# Audio Transcription & Summary App - Project Overview
+# NotebookLM Query API - Project Overview
 
-## Descripción del Proyecto
+> **Last Updated:** 2026-01-17
+> **Status:** Backend Complete - Production Ready
+> **Version:** 1.0.0
 
-Esta aplicación permite a los usuarios subir archivos de audio junto con un prompt personalizado. El backend se conecta con el MCP de NotebookLLM para transcribir el audio y generar un resumen basado en el prompt proporcionado.
+## Project Description
 
-## Arquitectura
+This application provides a RESTful API to interact with NotebookLM notebooks programmatically. Users can list their existing notebooks, query them with natural language prompts, and manage MCP authentication without server restarts.
+
+**Key Change:** The project originally focused on audio transcription but has been refactored to focus exclusively on querying existing NotebookLM notebooks via the Model Context Protocol (MCP).
+
+---
+
+## Architecture
 
 ```
 transcription-to-notion/
-├── backend/          # Node.js + Express API
-├── frontend/         # React + Vite + shadcn/ui
-└── plans/           # Documentación de implementación
+├── backend/          # Node.js + Express + TypeScript API (✅ COMPLETE)
+├── frontend/         # React + Vite + shadcn/ui (⏳ PLANNED)
+├── plans/           # Implementation documentation
+└── CLAUDE.md        # Project memory and context
 ```
 
-## Stack Tecnológico
+---
 
-### Backend
+## Tech Stack
 
-- **Runtime**: Node.js (ES Modules)
-- **Framework**: Express.js
-- **Architecture**: Clean Architecture (Layered)
-- **MCP Integration**: NotebookLLM MCP Server (Python) vía `@modelcontextprotocol/sdk`
-- **File Upload**: Multer
-- **Validation**: Joi
-- **Error Handling**: @hapi/boom
-- **CORS**: Para permitir requests desde el frontend
+### Backend (✅ Implemented)
 
-### Frontend
+| Technology                      | Purpose                       | Status      |
+| ------------------------------- | ----------------------------- | ----------- |
+| **TypeScript**                  | Type safety and better DX     | ✅ Complete |
+| **Node.js**                     | Runtime (ES Modules)          | ✅ Complete |
+| **Express**                     | Web framework                 | ✅ Complete |
+| **NotebookLM MCP**              | AI query service              | ✅ Complete |
+| **@modelcontextprotocol/sdk**   | MCP client SDK                | ✅ Complete |
+| **Joi**                         | Request validation            | ✅ Complete |
+| **@hapi/boom**                  | HTTP error handling           | ✅ Complete |
+| **CORS**                        | Frontend cross-origin support | ✅ Complete |
+| **tsx**                         | TypeScript hot reload         | ✅ Complete |
 
-- **Framework**: React 18
-- **Build Tool**: Vite
-- **UI Components**: shadcn/ui
-- **Styling**: Tailwind CSS (requerido por shadcn)
-- **HTTP Client**: Axios
+### Frontend (⏳ Planned)
+
+| Technology       | Purpose       | Status   |
+| ---------------- | ------------- | -------- |
+| **React 18**     | UI framework  | ⏳ Planned |
+| **Vite**         | Build tool    | ⏳ Planned |
+| **shadcn/ui**    | UI components | ⏳ Planned |
+| **Tailwind CSS** | Styling       | ⏳ Planned |
+| **Axios**        | HTTP client   | ⏳ Planned |
 
 ### External Services
 
-- **NotebookLLM MCP Server**: Servidor Python para transcripción y análisis de audio
-  - Instalación: `uv tool install notebooklm-mcp-server`
-  - Autenticación: `notebooklm-mcp-auth` (extrae cookies de Google)
-  - Tokens: `~/.notebooklm-mcp/auth.json`
+**NotebookLM MCP Server** - Python-based MCP server for NotebookLM integration
 
-## Funcionalidades Core (MVP)
+- **Installation:** `uv tool install notebooklm-mcp-server`
+- **Authentication:** `notebooklm-mcp-auth` (opens Chrome, extracts Google cookies)
+- **Credentials Path:** `~/.notebooklm-mcp/auth.json`
+- **Transport:** Stdio (spawns Python process from Node.js)
 
-### Backend
+---
 
-1. **Endpoint POST `/api/transcribe`**
-   - Recibe: archivo de audio + prompt (texto)
-   - Procesa: envía audio al MCP de NotebookLLM
-   - Retorna: transcripción + resumen basado en el prompt
+## Core Features (MVP)
 
-### Frontend
+### Backend (✅ Complete)
 
-1. **Interfaz de Upload**
-   - Selector de archivo de audio
-   - Campo de texto para el prompt
-   - Botón de submit
-2. **Visualización de Resultados**
-   - Mostrar transcripción completa
-   - Mostrar resumen generado
-   - Estados de carga y errores
+**Notebook Operations:**
 
-## Fases de Implementación
+1. **GET `/api/v1/notebook/list`**
+   - Lists all NotebookLM notebooks for authenticated user
+   - Returns: notebook ID, title, URL
 
-### Fase 1: Backend Setup ✓ (Siguiente)
+2. **POST `/api/v1/notebook/query`**
+   - Query specific notebook by title with natural language prompt
+   - Receives: `notebookTitle` (string), `prompt` (string)
+   - Returns: AI-generated answer, notebook metadata
 
-- Inicializar proyecto Node.js
-- Configurar Express
-- Implementar endpoint de transcripción
-- Integrar NotebookLLM MCP
+3. **GET `/api/v1/notebook/health`**
+   - Health check for notebook service
 
-### Fase 2: Frontend Setup
+**Authentication Management:**
 
-- Inicializar proyecto React + Vite
-- Configurar shadcn/ui
-- Crear componentes básicos
+4. **POST `/api/v1/auth/reconnect`**
+   - Reconnects MCP client to reload credentials without server restart
+   - Use after running `notebooklm-mcp-auth` to refresh tokens
 
-### Fase 3: Integración
+5. **GET `/api/v1/auth/health`**
+   - Health check for auth service
 
-- Conectar frontend con backend
-- Testing end-to-end
-- Refinamiento de UI/UX
+### Frontend (⏳ Planned)
+
+1. **Notebook Browser**
+   - Display list of available notebooks
+   - Search and filter notebooks
+
+2. **Query Interface**
+   - Select notebook from list
+   - Enter natural language prompt
+   - Submit query button
+
+3. **Results Display**
+   - Show AI-generated answer
+   - Display notebook context
+   - Loading and error states
+
+4. **Authentication UI**
+   - Visual indicator for auth status
+   - Reconnect button for expired sessions
+
+---
+
+## Implementation Phases
+
+### Phase 1: Backend Implementation ✅ COMPLETE
+
+- [x] Initialize TypeScript + Express project
+- [x] Configure Clean Architecture structure
+- [x] Implement MCP client wrapper
+- [x] Create notebook query service
+- [x] Build notebook list endpoint
+- [x] Build notebook query endpoint
+- [x] Implement auth reconnect endpoint
+- [x] Add request validation (Joi)
+- [x] Add error handling (Boom)
+- [x] Configure CORS
+- [x] Add health check endpoints
+- [x] Test with curl/Postman
+
+**Removed from original plan:**
+- ❌ Audio file upload (Multer)
+- ❌ Transcription service
+- ❌ Upload directory management
+
+**Added beyond original plan:**
+- ✅ Auth reconnect endpoint
+- ✅ TypeScript migration
+- ✅ Health check endpoints
+- ✅ Clean Architecture pattern
+
+### Phase 2: Frontend Implementation ⏳ NEXT
+
+- [ ] Initialize React + Vite + TypeScript project
+- [ ] Configure shadcn/ui + Tailwind
+- [ ] Create notebook list component
+- [ ] Create notebook selector component
+- [ ] Create query input component
+- [ ] Create results display component
+- [ ] Implement API client
+- [ ] Add loading and error states
+- [ ] Create auth status indicator
+- [ ] Test UI/UX flow
+
+### Phase 3: Integration & Testing ⏳ PLANNED
+
+- [ ] Connect frontend to backend
+- [ ] End-to-end testing
+- [ ] Error handling verification
+- [ ] Performance optimization
+- [ ] Documentation updates
+- [ ] Deployment preparation
+
+---
+
+## Key Architectural Decisions
+
+### 1. Focus on Notebook Queries (Not Transcription)
+
+**Decision:** Removed all transcription and audio upload functionality
+**Rationale:** Simplify scope, focus on notebook querying use case
+**Impact:**
+- Removed Multer dependency
+- Removed file upload endpoints
+- Removed transcription service layer
+- Smaller, more focused codebase
+
+### 2. Manual Auth with Reconnect Endpoint
+
+**Decision:** Manual `notebooklm-mcp-auth` + API reconnect endpoint
+**Rationale:** MCP auth command requires interactive browser session
+**Impact:**
+- User runs auth command manually in terminal
+- User calls `/auth/reconnect` to reload credentials
+- No server restart required
+- Simpler than automation attempts
+
+### 3. Clean Architecture Pattern
+
+**Decision:** Layered architecture with clear separation of concerns
+**Rationale:** Maintainability, testability, scalability
+**Layers:**
+- **Config:** Environment and settings
+- **Libs:** MCP client wrapper
+- **Services:** Business logic (notebookLLM, notebookQuery, auth)
+- **Schemas:** Joi validation schemas
+- **Middlewares:** Validation, error handling
+- **Routes:** API endpoint definitions
+
+### 4. TypeScript for Type Safety
+
+**Decision:** Full TypeScript implementation
+**Rationale:** Better DX, fewer runtime errors, clearer interfaces
+**Impact:**
+- Strict mode enabled
+- All services and routes typed
+- Better IDE support
+- Easier refactoring
+
+---
+
+## Prerequisites
+
+### Required Software
+
+- **Node.js** >= 18.x
+- **npm** or **yarn**
+- **Python** >= 3.8 (for NotebookLM MCP Server)
+- **Google Chrome** (for MCP authentication)
+- **Google Account** with NotebookLM access
+
+### MCP Server Setup
+
+```bash
+# Option 1: Install with uv (recommended)
+uv tool install notebooklm-mcp-server
+
+# Option 2: Install with pip
+pip install notebooklm-mcp-server
+
+# Authenticate
+notebooklm-mcp-auth
+
+# Verify credentials
+ls ~/.notebooklm-mcp/auth.json  # Unix/Mac
+dir $HOME\.notebooklm-mcp\auth.json  # Windows
+```
+
+---
+
+## Quick Start
+
+### Backend Development
+
+```bash
+cd backend
+npm install
+npm run dev
+# Server running at http://localhost:3000
+```
+
+### Test Endpoints
+
+```bash
+# Health check
+curl http://localhost:3000/api/v1/notebook/health
+
+# List notebooks
+curl http://localhost:3000/api/v1/notebook/list
+
+# Query notebook
+curl -X POST http://localhost:3000/api/v1/notebook/query \
+  -H "Content-Type: application/json" \
+  -d '{"notebookTitle": "My Notebook", "prompt": "Summarize the main topics"}'
+
+# Reconnect auth (after running notebooklm-mcp-auth)
+curl -X POST http://localhost:3000/api/v1/auth/reconnect
+```
+
+---
+
+## Project Status Summary
+
+| Component        | Status         | Progress |
+| ---------------- | -------------- | -------- |
+| Backend API      | ✅ Complete    | 100%     |
+| MCP Integration  | ✅ Complete    | 100%     |
+| Auth Management  | ✅ Complete    | 100%     |
+| Frontend         | ⏳ Not Started | 0%       |
+| Integration      | ⏳ Not Started | 0%       |
+| Deployment       | ⏳ Not Started | 0%       |
+
+---
+
+## Future Enhancements
+
+### Short Term
+- [ ] Implement frontend UI
+- [ ] Add unit tests
+- [ ] Implement structured logging
+- [ ] Add API documentation (OpenAPI/Swagger)
+
+### Medium Term
+- [ ] Create notebook endpoint
+- [ ] Delete notebook endpoint
+- [ ] Add sources to notebook
+- [ ] Batch query operations
+
+### Long Term
+- [ ] Rate limiting
+- [ ] API key authentication
+- [ ] Caching layer (Redis)
+- [ ] Monitoring and metrics
+- [ ] Multi-user support
+- [ ] Deployment to cloud (Railway/Render)
+
+---
+
+## Documentation
+
+- **Main README:** Project overview and setup instructions
+- **Backend README:** Backend-specific documentation
+- **MCP Setup Guide:** Detailed MCP installation and auth
+- **Testing Guide:** API testing examples
+- **CLAUDE.md:** Project memory and decision log (this serves as the source of truth)
+
+---
+
+## References
+
+- **Repository:** https://github.com/fabroche/transcription-to-notion
+- **NotebookLM MCP:** https://github.com/jacob-bd/notebooklm-mcp
+- **Model Context Protocol:** https://modelcontextprotocol.io/
+- **Google NotebookLM:** https://notebooklm.google.com
+
+---
+
+**This plan reflects the current state of the project as of January 2026. The backend is production-ready; frontend development is the next phase.**
