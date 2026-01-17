@@ -1,13 +1,13 @@
-# Audio Transcription Backend (TypeScript)
+# NotebookLM Query Backend (TypeScript)
 
-Backend API para transcripción de audio usando NotebookLLM MCP, implementado con TypeScript y Clean Architecture.
+Backend API for querying NotebookLLM notebooks using MCP, implemented with TypeScript and Clean Architecture.
 
 ## Stack Tecnológico
 
 - **TypeScript** - Tipado estático y mejor DX
 - **Node.js** - Runtime
 - **Express** - Framework web
-- **NotebookLLM MCP** - Servidor Python para transcripción
+- **NotebookLLM MCP** - Servidor Python para consultas a notebooks
 
 ## Arquitectura
 
@@ -20,9 +20,9 @@ src/
 │   ├── libs/           # Wrappers de librerías externas (MCP client)
 │   ├── services/       # Lógica de negocio
 │   ├── schemas/        # Validación con Joi
-│   ├── middlewares/    # Upload, validation, error handling
+│   ├── middlewares/    # Validation, error handling
 │   └── routes/         # Definición de endpoints
-└── index.js            # Entry point
+└── index.ts            # Entry point
 ```
 
 ## Prerequisitos
@@ -72,7 +72,6 @@ El archivo `.env` ya está configurado con valores por defecto:
 NODE_ENV=development
 PORT=3000
 CORS_ORIGIN=http://localhost:5173
-MAX_FILE_SIZE=52428800
 MCP_AUTH_PATH=~/.notebooklm-mcp/auth.json
 ```
 
@@ -98,30 +97,37 @@ npm run type-check
 
 Información general de la API
 
-### GET /api/v1/transcription/health
+**Response:**
 
-Health check del servicio
+```json
+{
+  "message": "NotebookLM Query API",
+  "version": "1.0.0",
+  "endpoints": {
+    "notebookList": "GET /api/v1/notebook/list",
+    "notebookQuery": "POST /api/v1/notebook/query",
+    "notebookHealth": "GET /api/v1/notebook/health"
+  }
+}
+```
+
+### GET /api/v1/notebook/health
+
+Health check del servicio de notebooks
 
 **Response:**
 
 ```json
 {
   "success": true,
-  "message": "Transcription service is running",
-  "timestamp": "2026-01-17T14:30:00.000Z"
+  "message": "Notebook query service is running",
+  "timestamp": "2026-01-17T19:30:00.000Z"
 }
 ```
 
-### POST /api/v1/transcription/transcribe
+### GET /api/v1/notebook/list
 
-Transcribir audio y generar resumen
-
-**Request:**
-
-- Content-Type: `multipart/form-data`
-- Body:
-  - `audio` (file): Archivo de audio (mp3, wav, m4a, ogg, webm)
-  - `prompt` (string): Prompt personalizado (10-1000 caracteres)
+Listar todos los notebooks de NotebookLLM
 
 **Response:**
 
@@ -129,9 +135,48 @@ Transcribir audio y generar resumen
 {
   "success": true,
   "data": {
-    "transcription": "...",
-    "summary": "...",
-    "notebookId": "..."
+    "notebooks": [
+      {
+        "id": "abc123...",
+        "title": "My Notebook",
+        "url": "https://notebooklm.google.com/notebook/..."
+      }
+    ],
+    "count": 1
+  }
+}
+```
+
+### POST /api/v1/notebook/query
+
+Consultar un notebook existente por nombre
+
+**Request:**
+
+- Content-Type: `application/json`
+- Body:
+
+```json
+{
+  "notebookTitle": "My Notebook",
+  "prompt": "What are the main topics discussed?"
+}
+```
+
+**Validation:**
+
+- `notebookTitle`: String, 1-200 caracteres, requerido
+- `prompt`: String, 10-1000 caracteres, requerido
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "answer": "AI-generated answer based on notebook content...",
+    "notebookId": "abc123...",
+    "notebookTitle": "My Notebook"
   }
 }
 ```
@@ -140,9 +185,9 @@ Transcribir audio y generar resumen
 
 ```json
 {
-  "statusCode": 400,
-  "error": "Bad Request",
-  "message": "Validation error"
+  "statusCode": 404,
+  "error": "Not Found",
+  "message": "Notebook \"My Notebook\" not found. Available notebooks: Notebook1, Notebook2"
 }
 ```
 
@@ -150,12 +195,18 @@ Transcribir audio y generar resumen
 
 ```bash
 # Health check
-curl http://localhost:3000/api/v1/transcription/health
+curl http://localhost:3000/api/v1/notebook/health
 
-# Transcribir audio
-curl -X POST http://localhost:3000/api/v1/transcription/transcribe \
-  -F "audio=@path/to/audio.mp3" \
-  -F "prompt=Genera un resumen ejecutivo de esta conversación"
+# Listar notebooks
+curl http://localhost:3000/api/v1/notebook/list
+
+# Consultar un notebook
+curl -X POST http://localhost:3000/api/v1/notebook/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notebookTitle": "My Notebook",
+    "prompt": "What are the main topics?"
+  }'
 ```
 
 ## Estructura de Capas
@@ -163,47 +214,51 @@ curl -X POST http://localhost:3000/api/v1/transcription/transcribe \
 ### Config Layer
 
 - **Propósito**: Configuración centralizada
-- **Archivo**: `src/config/index.js`
+- **Archivo**: `src/config/index.ts`
 
 ### Libs Layer
 
 - **Propósito**: Wrappers de librerías externas
-- **Archivo**: `src/api/libs/mcp-client.js`
+- **Archivo**: `src/api/libs/mcp-client.ts`
 - **Responsabilidad**: Conexión con NotebookLLM MCP Server
 
 ### Services Layer
 
 - **Propósito**: Lógica de negocio
 - **Archivos**:
-  - `notebookLLM.service.js`: Operaciones de NotebookLLM
-  - `transcription.service.js`: Orquestación del proceso de transcripción
+  - `notebookLLM.service.ts`: Operaciones de NotebookLLM (list, create, query, delete)
+  - `notebookQuery.service.ts`: Orquestación de consultas a notebooks
 
 ### Schemas Layer
 
 - **Propósito**: Validación de DTOs
-- **Archivo**: `src/api/schemas/transcription.schema.js`
+- **Archivo**: `src/api/schemas/notebookQuery.schema.ts`
 - **Librería**: Joi
 
 ### Middlewares Layer
 
-- **Propósito**: Validación, upload, error handling
+- **Propósito**: Validación, error handling
 - **Archivos**:
-  - `upload.middleware.js`: Multer configuration
-  - `validator.middleware.js`: Joi validation
-  - `error.middleware.js`: Error handling
+  - `validator.middleware.ts`: Joi validation
+  - `error.middleware.ts`: Error handling
 
 ### Routes Layer
 
 - **Propósito**: Definición de endpoints
 - **Archivos**:
-  - `transcription.router.js`: Rutas de transcripción
-  - `index.js`: Registry de routers
+  - `notebookQuery.router.ts`: Rutas de consulta a notebooks
+  - `index.ts`: Registry de routers
 
-## Limitaciones Actuales
+## Herramientas MCP Disponibles
 
-- Tamaño máximo de archivo: 50MB
-- Formatos soportados: mp3, wav, m4a, ogg, webm
-- La integración con NotebookLLM MCP puede requerir ajustes según la API real
+El servicio utiliza las siguientes herramientas del NotebookLLM MCP:
+
+1. **notebook_list** - Listar notebooks
+2. **notebook_create** - Crear notebook
+3. **notebook_query** - Consultar notebook
+4. **notebook_add_text** - Agregar texto a notebook
+5. **notebook_add_drive** - Agregar archivo de Drive
+6. **notebook_delete** - Eliminar notebook
 
 ## Troubleshooting
 
@@ -215,15 +270,30 @@ curl -X POST http://localhost:3000/api/v1/transcription/transcribe \
 2. Verificar autenticación: `ls ~/.notebooklm-mcp/auth.json`
 3. Re-autenticar si es necesario: `notebooklm-mcp-auth`
 
+### Error: "Authentication expired"
+
+**Solución:**
+
+```bash
+# Re-autenticar
+notebooklm-mcp-auth
+
+# Reiniciar el servidor
+npm run dev
+```
+
+### Error: "Notebook not found"
+
+**Solución:**
+
+1. Listar notebooks disponibles: `GET /api/v1/notebook/list`
+2. Verificar el título exacto del notebook (case-insensitive)
+3. Crear el notebook en NotebookLM si no existe
+
 ### Error: "CORS policy"
 
 **Solución:**
 Verificar que `CORS_ORIGIN` en `.env` coincide con la URL del frontend.
-
-### Error: "File size exceeds the limit"
-
-**Solución:**
-Ajustar `MAX_FILE_SIZE` en `.env` (valor en bytes).
 
 ## Próximos Pasos
 
@@ -232,3 +302,4 @@ Ajustar `MAX_FILE_SIZE` en `.env` (valor en bytes).
 - [ ] Implementar rate limiting
 - [ ] Agregar logging estructurado
 - [ ] Implementar caché de resultados
+- [ ] Implementar frontend React

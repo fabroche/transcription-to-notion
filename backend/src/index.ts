@@ -20,11 +20,12 @@ routerApi(app);
 // Root endpoint
 app.get('/', (_req: Request, res: Response): void => {
   res.json({
-    message: 'Audio Transcription API',
+    message: 'NotebookLM Query API',
     version: '1.0.0',
     endpoints: {
-      health: '/api/v1/transcription/health',
-      transcribe: 'POST /api/v1/transcription/transcribe'
+      notebookList: 'GET /api/v1/notebook/list',
+      notebookQuery: 'POST /api/v1/notebook/query',
+      notebookHealth: 'GET /api/v1/notebook/health'
     }
   });
 });

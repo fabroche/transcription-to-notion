@@ -1,7 +1,7 @@
 {
-  "name": "transcription-backend",
+  "name": "notebook-query-backend",
   "version": "1.0.0",
-  "description": "Audio transcription backend with NotebookLLM MCP integration",
+  "description": "NotebookLLM query backend with MCP integration",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
@@ -11,17 +11,15 @@
     "type-check": "tsc --noEmit"
   },
   "keywords": [
-    "transcription",
     "notebooklm",
     "mcp",
-    "audio"
+    "query"
   ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/multer": "^2.0.0",
     "@types/node": "^25.0.9",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.21.0",
